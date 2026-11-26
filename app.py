@@ -1,200 +1,212 @@
 
 import streamlit as st
 import pandas as pd
-import random
+import requests
+import plotly.graph_objects as go
 from datetime import datetime
-#DEMO DATA ONLY
+
 # ==========================================
-# TRADO AI TRADER | VERSION 2.0
+# TRADO AI TRADER v3.0
 # ==========================================
 
 st.set_page_config(
-    page_title="TRADO AI Trader",
+    page_title="TRADO AI TRADER",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-
 # ==========================================
-# TWELVE DATA - LIVE FOREX CONNECTION
+# SECURE CONFIGURATION
 # ==========================================
 
-import requests
-import pandas as pd
-import streamlit as st
-
-try:
-    API_KEY = st.secrets["TWELVE_DATA_API_KEY"]
-except (KeyError, FileNotFoundError):
-    API_KEY = None
-
-@st.cache_data(ttl=30)
-def get_market_data(symbol, api_key):
-    if not api_key:
-        return None, "API key not configured."
-
+def get_secret(name):
     try:
-        response = requests.get(
-            "https://api.twelvedata.com/time_series",
-            params={
-                "symbol": symbol,
-                "interval": "1min",
-                "outputsize": 50,
-                "apikey": api_key
-            },
-            timeout=15
-        )
+        return st.secrets[name]
+    except (KeyError, FileNotFoundError):
+        return None
 
-        response.raise_for_status()
-        result = response.json()
-
-        if "values" not in result:
-            return None, result.get(
-                "message",
-                result.get("status", "Market data unavailable.")
-            )
-
-        df = pd.DataFrame(result["values"])
-
-        df["datetime"] = pd.to_datetime(df["datetime"])
-        df["close"] = pd.to_numeric(df["close"])
-
-        df = df.sort_values("datetime")
-
-        return df, None
-
-    except requests.RequestException:
-        return None, "Network connection failed."
-    except (ValueError, KeyError):
-        return None, "Could not process market data."
-
-# Fetch actual EUR/USD data
-chart_data, market_error = get_market_data(
-    "EUR/USD", API_KEY
-)
-
+APP_USERNAME = get_secret("TRADO_APP_USERNAME")
+APP_PASSWORD = get_secret("TRADO_APP_PASSWORD")
+API_KEY = get_secret("TWELVE_DATA_API_KEY")
 
 # ==========================================
-# CUSTOM DESIGN
+# LOGIN SYSTEM
 # ==========================================
+
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
 
 st.markdown("""
 <style>
 .stApp {
-    background: #080d17;
-    color: #e8edf5;
+    background: #080e19;
+    color: #ffffff;
 }
 [data-testid="stSidebar"] {
-    background: #0c1422;
-    border-right: 1px solid #1b2b3e;
+    background: #101a2a;
+}
+.login-box {
+    background: #111e30;
+    padding: 30px;
+    border-radius: 15px;
+    border: 1px solid #263c54;
 }
 h1, h2, h3 {
-    color: #f3f6fc !important;
-}
-p, label {
-    color: #aab7c8;
-}
-.metric-card {
-    background: linear-gradient(135deg,#142238,#0d1727);
-    border: 1px solid #233850;
-    padding: 20px;
-    border-radius: 13px;
-    min-height: 115px;
-}
-.metric-label {
-    color: #91a5bb;
-    font-size: 13px;
-}
-.metric-value {
-    color: #ffffff;
-    font-size: 27px;
-    font-weight: 700;
-    margin-top: 8px;
-}
-.green {
-    color: #00e6a0;
-}
-.red {
-    color: #ff657a;
-}
-.panel {
-    background: #101b2b;
-    border: 1px solid #22344b;
-    padding: 20px;
-    border-radius: 13px;
-}
-.brand {
-    color: #00e6a0;
-    font-size: 29px;
-    font-weight: 900;
-    letter-spacing: 2px;
-}
-.small-text {
-    color: #8093aa;
-    font-size: 12px;
+    color: #ffffff !important;
 }
 div.stButton > button {
-    background: #00c98b;
-    color: #06130f;
-    border: none;
+    background: #00d69b;
+    color: #06120f;
     border-radius: 8px;
-    font-weight: 700;
-    min-height: 42px;
-}
-div.stButton > button:hover {
-    background: #00e6a0;
-    color: #06130f;
+    font-weight: bold;
 }
 </style>
 """, unsafe_allow_html=True)
+
+if not APP_USERNAME or not APP_PASSWORD:
+    st.error("App login credentials are not configured.")
+    st.info("Add TRADO_APP_USERNAME and TRADO_APP_PASSWORD under Streamlit Secrets.")
+    st.stop()
+
+if not st.session_state.authenticated:
+
+    st.markdown("<br><br>", unsafe_allow_html=True)
+
+    left, center, right = st.columns([1, 1.2, 1])
+
+    with center:
+        st.markdown("# 🚀 TRADO AI")
+        st.subheader("Intelligent Trading Platform")
+        st.caption("SMART TRADING. CONTROLLED RISK.")
+
+        with st.form("login_form"):
+            username = st.text_input("Username")
+            password = st.text_input(
+                "Password",
+                type="password"
+            )
+
+            submitted = st.form_submit_button(
+                "LOGIN TO TRADO",
+                use_container_width=True
+            )
+
+            if submitted:
+                if (
+                    username == APP_USERNAME
+                    and password == APP_PASSWORD
+                ):
+                    st.session_state.authenticated = True
+                    st.rerun()
+                else:
+                    st.error("Incorrect username or password.")
+
+        st.caption("TRADO AI TRADER v3.0")
+        st.caption("Developed by ReggieNextDoor")
+
+    st.stop()
+
+# ==========================================
+# MARKET DATA CONNECTION
+# ==========================================
+
+@st.cache_data(ttl=60)
+def get_market_data(symbol, api_key):
+
+    url = "https://api.twelvedata.com/time_series"
+
+    params = {
+        "symbol": symbol,
+        "interval": "1min",
+        "outputsize": 100,
+        "apikey": api_key
+    }
+
+    try:
+        response = requests.get(
+            url,
+            params=params,
+            timeout=20
+        )
+
+        response.raise_for_status()
+        data = response.json()
+
+        if "values" not in data:
+            return None, data.get(
+                "message",
+                "Market data unavailable"
+            )
+
+        df = pd.DataFrame(data["values"])
+
+        for column in ["open", "high", "low", "close"]:
+            df[column] = pd.to_numeric(
+                df[column],
+                errors="coerce"
+            )
+
+        df["datetime"] = pd.to_datetime(df["datetime"])
+
+        df = df.sort_values("datetime")
+        df = df.dropna()
+
+        return df, None
+
+    except requests.RequestException:
+        return None, "Connection error. Check your internet."
+
+    except (ValueError, KeyError):
+        return None, "Unable to process market data."
 
 # ==========================================
 # SIDEBAR
 # ==========================================
 
 with st.sidebar:
-    st.markdown('<div class="brand">TRADO AI</div>',
-                unsafe_allow_html=True)
-    st.caption("INTELLIGENT TRADING PLATFORM")
 
-    st.markdown("---")
+    st.markdown("# 🟢 TRADO AI")
+    st.caption("TRADING INTELLIGENCE")
+
+    st.divider()
 
     page = st.radio(
-        "MAIN MENU",
+        "NAVIGATION",
         [
             "Dashboard",
-            "Market Analysis",
-            "AI Signals",
-            "Trade History",
+            "Live Markets",
+            "AI Analysis",
             "Risk Management",
             "Settings"
         ]
     )
 
-    st.markdown("---")
-    st.success("● SYSTEM ONLINE")
-    st.warning("DEMO MODE ACTIVE")
+    st.divider()
 
-    st.markdown("---")
-    st.caption("TRADO AI TRADER v2.0")
-    st.caption("Developed by ReggieNextDoor")
+    st.success("APPLICATION ONLINE")
+    st.warning("READ-ONLY MODE")
+
+    if st.button("LOG OUT", use_container_width=True):
+        st.session_state.authenticated = False
+        st.rerun()
+
+    st.caption("TRADO AI TRADER v3.0")
 
 # ==========================================
 # HEADER
 # ==========================================
 
-c1, c2 = st.columns([3, 1])
+col1, col2 = st.columns([3, 1])
 
-with c1:
-    st.markdown("# TRADO AI TRADER")
-    st.caption("Your intelligent market analysis command center")
+with col1:
+    st.title("TRADO AI TRADER")
+    st.caption("Your intelligent trading command center")
 
-with c2:
-    st.markdown("### 🟢 DEMO ACCOUNT")
-    st.caption(datetime.now().strftime("%d %b %Y | %H:%M"))
+with col2:
+    st.success("● CONNECTED TO APP")
 
-st.markdown("---")
+st.divider()
 
 # ==========================================
 # DASHBOARD
@@ -202,208 +214,194 @@ st.markdown("---")
 
 if page == "Dashboard":
 
-    st.subheader("Account Overview")
+    st.header("Trading Dashboard")
 
-    cols = st.columns(4)
+    st.info(
+        "Welcome to TRADO. Your trading intelligence "
+        "workspace is ready."
+    )
 
-    cards = [
-        ("ACCOUNT BALANCE", "$10,000.00", "Demo funds"),
-        ("EQUITY", "$10,000.00", "Simulated account"),
-        ("OPEN TRADES", "0", "No active positions"),
-        ("DAILY P/L", "$0.00", "Simulated result")
+    symbols = [
+        "EUR/USD",
+        "GBP/USD",
+        "USD/JPY",
+        "AUD/USD",
+        "XAU/USD"
     ]
 
-    for col, (label, value, note) in zip(cols, cards):
-        with col:
-            st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-label">{label}</div>
-                <div class="metric-value">{value}</div>
-                <div class="small-text">{note}</div>
-            </div>
-            """, unsafe_allow_html=True)
+    if API_KEY:
 
-    st.markdown("## Market Overview")
+        cols = st.columns(3)
 
-    left, right = st.columns([2, 1])
+        for index, symbol in enumerate(symbols):
+            df, error = get_market_data(symbol, API_KEY)
 
-    with left:
-        st.markdown('<div class="panel">', unsafe_allow_html=True)
-        st.markdown("### EUR/USD Price Chart")
-        st.caption("Illustrative simulated price data")
+            with cols[index % 3]:
 
-        st.line_chart(
-    chart_data,
-    height=320
-)
+                st.markdown(f"### {symbol}")
 
-        st.markdown('</div>', unsafe_allow_html=True)
+                if df is not None and not df.empty:
 
-    with right:
-        st.markdown("### Market Watch")
+                    price = df["close"].iloc[-1]
 
-        markets = [
-            ("EUR/USD", "1.08500", "+0.24%"),
-            ("GBP/USD", "1.27100", "+0.18%"),
-            ("USD/JPY", "150.250", "-0.12%"),
-            ("AUD/USD", "0.65400", "+0.31%"),
-            ("XAU/USD", "2650.00", "-0.08%")
-        ]
+                    st.metric(
+                        "Latest available price",
+                        f"{price:.5f}"
+                    )
 
+                else:
+                    st.warning("Data unavailable")
 
-    chart = chart_data.set_index("datetime")[["close"]]
+    else:
+        st.warning("Market API key is not configured.")
 
-    st.line_chart(chart)
+    st.divider()
+
+    st.subheader("Platform Status")
+
+    a, b, c = st.columns(3)
+
+    a.metric("Trading Environment", "Read-only")
+    b.metric("Live Orders", "Disabled")
+    c.metric("Broker Connection", "Not connected")
 
     st.caption(
-        "Source: Twelve Data | "
-        "1-minute interval | Last 50 data points"
+        "Market data is supplied by Twelve Data. "
+        "Quotes may be delayed or subject to provider limits."
     )
 
-    if st.button("Refresh Market Data"):
-        st.cache_data.clear()
-        st.rerun()
+# ==========================================
+# LIVE MARKETS
+# ==========================================
 
-else:
-   
-    with right:
-        st.markdown("### Market Watch")
+elif page == "Live Markets":
 
-        markets = [
-            ("EUR/USD", "1.08500", "+0.24%"),
-            ("GBP/USD", "1.27100", "+0.18%"),
-            ("USD/JPY", "150.250", "-0.12%"),
-            ("AUD/USD", "0.65400", "+0.31%"),
-            ("XAU/USD", "2650.00", "-0.08%")
+    st.header("📊 Live Market Data")
+
+    symbol = st.selectbox(
+        "Choose trading instrument",
+        [
+            "EUR/USD",
+            "GBP/USD",
+            "USD/JPY",
+            "AUD/USD",
+            "USD/CAD",
+            "XAU/USD"
         ]
-
-        for name, price, change in markets:
-            st.markdown(f"""
-            <div class="metric-card" style="margin-bottom:10px">
-                <b>{name}</b><br>
-                <span style="font-size:20px">{price}</span>
-                <span class="small-text">{change}</span>
-            </div>
-            """, unsafe_allow_html=True)
-
-        st.caption("Illustrative prices only.")
-
     )
 
+    if not API_KEY:
+        st.error("Configure your Twelve Data API key in Secrets.")
 
-        for name, price, change in markets:
-            st.markdown(f"""
-            <div class="metric-card" style="margin-bottom:10px">
-                <b>{name}</b><br>
-                <span style="font-size:20px">{price}</span>
-                <span class="small-text">{change}</span>
-            </div>
-            """, unsafe_allow_html=True)
+    else:
 
-        st.caption("All market figures are illustrative.")
+        df, error = get_market_data(symbol, API_KEY)
 
-    st.markdown("## AI Trading Intelligence")
+        if df is not None and not df.empty:
 
-    a, b = st.columns(2)
+            latest = df.iloc[-1]
 
-    with a:
-        st.markdown('<div class="panel">', unsafe_allow_html=True)
-        st.markdown("### 🤖 AI Market Status")
-        st.success("Analysis interface online")
-        st.write("Signal engine: Development mode")
-        st.write("Market feed: Not connected")
-        st.markdown('</div>', unsafe_allow_html=True)
+            st.metric(
+                f"{symbol} Latest Available Price",
+                f"{latest['close']:.5f}"
+            )
 
-    with b:
-        st.markdown('<div class="panel">', unsafe_allow_html=True)
-        st.markdown("### 🛡️ Risk Protection")
-        st.info("Demo trading only")
-        st.write("Live execution: Disabled")
-        st.write("Risk controls: Configuration pending")
-        st.markdown('</div>', unsafe_allow_html=True)
+            fig = go.Figure()
 
-# ==========================================
-# MARKET ANALYSIS
-# ==========================================
+            fig.add_trace(
+                go.Candlestick(
+                    x=df["datetime"],
+                    open=df["open"],
+                    high=df["high"],
+                    low=df["low"],
+                    close=df["close"],
+                    name=symbol
+                )
+            )
 
-elif page == "Market Analysis":
+            fig.update_layout(
+                template="plotly_dark",
+                height=500,
+                xaxis_rangeslider_visible=False,
+                title=f"{symbol} Price Chart",
+                paper_bgcolor="#080e19",
+                plot_bgcolor="#080e19"
+            )
 
-    st.title("📊 Market Analysis")
-    st.caption("Illustrative market analysis workspace")
+            st.plotly_chart(
+                fig,
+                use_container_width=True
+            )
 
-    
-st.markdown("### EUR/USD LIVE MARKET CHART")
+            st.caption(
+                "Provider: Twelve Data | "
+                "Interval: 1 minute | "
+                "Historical market data"
+            )
 
-if chart_data is not None and not chart_data.empty:
+            if st.button("Refresh Market Data"):
+                st.cache_data.clear()
+                st.rerun()
 
-    latest_price = float(chart_data["close"].iloc[-1])
-
-    st.metric(
-        "Latest EUR/USD Price",
-        f"{latest_price:.5f}"
-    )
-
-    chart = chart_data.set_index("datetime")[["close"]]
-
-    st.line_chart(chart)
-
-    st.caption(
-        "Source: Twelve Data | "
-        "1-minute interval | Last 50 data points"
-    )
-
-    if st.button("Refresh Market Data"):
-        st.cache_data.clear()
-        st.rerun()
-
-else:
-    st.warning(
-        "Market data is unavailable. "
-        "Check your API key and internet connection."
-    )
-
-
-    st.subheader(market)
-    st.line_chart(chart_data, height=350)
-
-    st.info("Connect a verified market data provider to display live prices.")
+        else:
+            st.error(error)
 
 # ==========================================
-# AI SIGNALS
+# AI ANALYSIS
 # ==========================================
 
-elif page == "AI Signals":
+elif page == "AI Analysis":
 
-    st.title("🤖 TRADO AI Signals")
+    st.header("🤖 TRADO AI Analysis")
 
-    st.info("Signal engine is currently in development.")
+    st.info("Technical analysis workspace")
 
-    st.markdown("""
-    | Feature | Status |
-    |---|---|
-    | Trend detection | Development |
-    | Moving averages | Planned |
-    | RSI analysis | Planned |
-    | MACD analysis | Planned |
-    | Signal validation | Planned |
-    """)
+    if API_KEY:
 
-    st.warning("No real BUY or SELL recommendations are generated.")
+        symbol = st.selectbox(
+            "Select instrument",
+            ["EUR/USD", "GBP/USD", "USD/JPY", "XAU/USD"]
+        )
 
-# ==========================================
-# TRADE HISTORY
-# ==========================================
+        df, error = get_market_data(symbol, API_KEY)
 
-elif page == "Trade History":
+        if df is not None and len(df) >= 30:
 
-    st.title("📜 Trade History")
-    st.info("No simulated trades have been recorded yet.")
+            close = df["close"]
 
-    history = pd.DataFrame(
-        columns=["Date", "Symbol", "Direction", "Entry", "Exit", "P/L"]
-    )
+            ema20 = close.ewm(
+                span=20,
+                adjust=False
+            ).mean()
 
-    st.dataframe(history, use_container_width=True)
+            ema50 = close.ewm(
+                span=50,
+                adjust=False
+            ).mean()
+
+            current = close.iloc[-1]
+
+            st.metric("Latest price", f"{current:.5f}")
+            st.metric("EMA 20", f"{ema20.iloc[-1]:.5f}")
+            st.metric("EMA 50", f"{ema50.iloc[-1]:.5f}")
+
+            if ema20.iloc[-1] > ema50.iloc[-1]:
+                st.success("Short-term trend: Upward")
+            elif ema20.iloc[-1] < ema50.iloc[-1]:
+                st.warning("Short-term trend: Downward")
+            else:
+                st.info("Trend: Neutral")
+
+            st.caption(
+                "Educational technical indicators, "
+                "not guaranteed trading signals."
+            )
+
+        else:
+            st.warning(error or "Insufficient market data.")
+
+    else:
+        st.warning("Configure the market data API first.")
 
 # ==========================================
 # RISK MANAGEMENT
@@ -411,17 +409,7 @@ elif page == "Trade History":
 
 elif page == "Risk Management":
 
-    st.title("🛡️ Risk Management")
-
-    st.write("Configure your demo risk-management preferences.")
-
-    risk = st.slider(
-        "Demo risk limit (%)",
-        min_value=0.5,
-        max_value=2.0,
-        value=1.0,
-        step=0.5
-    )
+    st.header("🛡️ Risk Management")
 
     balance = st.number_input(
         "Illustrative account balance ($)",
@@ -429,12 +417,25 @@ elif page == "Risk Management":
         value=10000.0
     )
 
-    st.metric(
-        "Illustrative risk allowance",
-        f"${balance * risk / 100:,.2f}"
+    risk = st.slider(
+        "Hypothetical risk percentage",
+        0.5,
+        2.0,
+        1.0,
+        0.5
     )
 
-    st.caption("This is a planning calculation, not an order or trade.")
+    risk_amount = balance * risk / 100
+
+    st.metric(
+        "Illustrative risk allowance",
+        f"${risk_amount:,.2f}"
+    )
+
+    st.info(
+        "This is a planning calculator. "
+        "It does not place orders."
+    )
 
 # ==========================================
 # SETTINGS
@@ -442,39 +443,40 @@ elif page == "Risk Management":
 
 elif page == "Settings":
 
-    st.title("⚙️ Platform Settings")
+    st.header("⚙️ Settings")
 
-    st.text_input("Platform name", "TRADO AI Trader")
-    st.text_input("Developer", "ReggieNextDoor")
+    st.write("TRADO AI Trader v3.0")
 
-    st.selectbox(
-        "Trading environment",
-        ["Demo only"]
+    st.text("Developer: ReggieNextDoor")
+
+    st.text("Market data: Twelve Data")
+
+    st.text("Environment: Read-only")
+
+    st.text("MT5 integration: Not connected")
+
+    st.warning(
+        "Broker credentials and live order execution "
+        "are not enabled in this application."
     )
-
-    st.selectbox(
-        "Broker integration",
-        ["Not connected", "MetaTrader 5 - planned"]
-    )
-
-    st.warning("Live trading is unavailable in this version.")
-
-    st.button("Save demo preferences")
 
 # ==========================================
 # FOOTER
 # ==========================================
 
-st.markdown("---")
+st.divider()
 
-st.markdown("""
-<center>
-<b style="color:#00e6a0">TRADO AI TRADER</b><br>
-<span style="color:#8292a8">
-Built with vision. Driven by innovation. Designed with discipline.
-<br>Version 2.0 | ReggieNextDoor
-</span>
-</center>
-""", unsafe_allow_html=True)
+st.markdown(
+    """
+    <center>
+    <h3 style="color:#00d69b">TRADO AI TRADER</h3>
+    SMART TRADING. CONTROLLED RISK. BIGGER VISION.
+    <br><br>
+    Developed by ReggieNextDoor | Version 3.0
+    </center>
+    """,
+    unsafe_allow_html=True
+)
+
 
 
