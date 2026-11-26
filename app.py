@@ -265,9 +265,29 @@ if page == "Dashboard":
         st.rerun()
 
 else:
-    st.warning(
-        "Market data is unavailable. "
-        "Check your API key and internet connection."
+   
+    with right:
+        st.markdown("### Market Watch")
+
+        markets = [
+            ("EUR/USD", "1.08500", "+0.24%"),
+            ("GBP/USD", "1.27100", "+0.18%"),
+            ("USD/JPY", "150.250", "-0.12%"),
+            ("AUD/USD", "0.65400", "+0.31%"),
+            ("XAU/USD", "2650.00", "-0.08%")
+        ]
+
+        for name, price, change in markets:
+            st.markdown(f"""
+            <div class="metric-card" style="margin-bottom:10px">
+                <b>{name}</b><br>
+                <span style="font-size:20px">{price}</span>
+                <span class="small-text">{change}</span>
+            </div>
+            """, unsafe_allow_html=True)
+
+        st.caption("Illustrative prices only.")
+
     )
 
 
