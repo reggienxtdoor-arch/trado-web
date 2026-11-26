@@ -1,72 +1,43 @@
+# TRADO AI v4.0
 
-# TRADO AI TRADER 🚀
+Educational market-data explorer and AI market-learning assistant.
 
-**Smart Trading. Intelligent Analysis. Controlled Risk.**
+## Features
+- Streamlit dark dashboard
+- Optional Twelve Data read-only market feed
+- Interactive candlestick chart
+- EMA 20, EMA 50 and RSI 14
+- OpenAI Responses API educational assistant
+- No broker login, no order placement, no live-money trading
 
-TRADO AI Trader is an AI-assisted trading platform designed to connect with MetaTrader 5 (MT5) and support Exness trading accounts.
+## Deploy
+1. Upload `app.py`, `requirements.txt`, and `README.md` to GitHub.
+2. Deploy the repository on Streamlit Community Cloud with main file `app.py`.
+3. Open App settings → Secrets and add:
 
-## 🌟 Features
-
-- 📊 Real-time trading dashboard
-- 📈 Market trend analysis
-- 🤖 AI-assisted trading signals
-- 📉 Risk management tools
-- 💰 Account balance monitoring
-- 🧪 Demo trading support
-- 🔐 Live trading activation controls
-- ⚙️ Configurable trading strategies
-
-## 🖥️ Supported Platforms
-
-- Exness
-- MetaTrader 5
-- Streamlit Community Cloud
-
-## 🛠️ Installation
-
-Clone the repository:
-
-```bash
-git clone https://github.com/reggienxtdoor-arch/trado-web.git
-cd trado-web
+```toml
+OPENAI_API_KEY = "your-private-openai-api-key"
+OPENAI_MODEL = "gpt-5.5"
+TWELVE_DATA_API_KEY = "your-private-twelve-data-key"
 ```
 
-Install dependencies:
+The Twelve Data key is optional. The AI Analyst requires an OpenAI API key.
 
+## Local run
 ```bash
 pip install -r requirements.txt
-```
-
-Run the application:
-
-```bash
 streamlit run app.py
 ```
 
-## 🔒 Risk Management
+For local use, place the same TOML settings in `.streamlit/secrets.toml`.
+Never commit real secrets to GitHub.
 
-TRADO is designed with risk controls in mind.
+## Important
+This is an educational application. AI output may be incorrect and is not financial advice.
+The app does not connect to brokers, collect broker credentials, or execute orders.
+Market data depends on provider availability, instrument coverage and plan limits.
 
-- Demo testing before live trading
-- Configurable risk limits
-- Stop-loss settings
-- Trade confirmation controls
-- Emergency trading shutdown
-
-## ⚠️ Important Notice
-
-Trading involves financial risk. TRADO is a software project, not a guarantee of profits.
-
-The application should be tested thoroughly using a demo account before any live trading is enabled.
-
-Never share your Exness password, MT5 credentials, or API secrets publicly.
-
-## 👨‍💻 Developer
-
-**Developer:** ReggieNextDoor  
-**Project:** TRADO AI Trader  
-**Repository:** https://github.com/reggienxtdoor-arch/trado-web
-
-## 📜 License
-
-This project is intended for educational and development purposes.
+## API documentation
+- OpenAI Responses API: https://developers.openai.com/api/docs/guides/migrate-to-responses
+- OpenAI Python SDK: https://developers.openai.com/api/docs/libraries
+- Twelve Data: https://twelvedata.com/docs

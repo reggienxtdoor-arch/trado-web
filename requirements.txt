@@ -1,10 +1,5 @@
-streamlit>=1.35
-pandas>=2.0
-numpy>=1.26
-plotly>=5.20
-yfinance>=0.2.40
-MetaTrader5>=5.0.45; platform_system == "Windows"
-
-streamlit
-pandas
-requests
+streamlit>=1.41.0
+pandas>=2.2.0
+requests>=2.32.0
+plotly>=5.24.0
+openai>=1.68.0
