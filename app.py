@@ -15,16 +15,65 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# DEMO DATA ONLY
-rng = random.Random(42)
-prices = [1.0850]
 
-for _ in range(49):
-    prices.append(round(prices[-1] + rng.uniform(-0.0010, 0.0010), 5))
+# ==========================================
+# TWELVE DATA - LIVE FOREX CONNECTION
+# ==========================================
 
-chart_data = pd.DataFrame({
-    "EUR/USD": prices
-})
+import requests
+import pandas as pd
+import streamlit as st
+
+try:
+    API_KEY = st.secrets["TWELVE_DATA_API_KEY"]
+except (KeyError, FileNotFoundError):
+    API_KEY = None
+
+@st.cache_data(ttl=30)
+def get_market_data(symbol, api_key):
+    if not api_key:
+        return None, "API key not configured."
+
+    try:
+        response = requests.get(
+            "https://api.twelvedata.com/time_series",
+            params={
+                "symbol": symbol,
+                "interval": "1min",
+                "outputsize": 50,
+                "apikey": api_key
+            },
+            timeout=15
+        )
+
+        response.raise_for_status()
+        result = response.json()
+
+        if "values" not in result:
+            return None, result.get(
+                "message",
+                result.get("status", "Market data unavailable.")
+            )
+
+        df = pd.DataFrame(result["values"])
+
+        df["datetime"] = pd.to_datetime(df["datetime"])
+        df["close"] = pd.to_numeric(df["close"])
+
+        df = df.sort_values("datetime")
+
+        return df, None
+
+    except requests.RequestException:
+        return None, "Network connection failed."
+    except (ValueError, KeyError):
+        return None, "Could not process market data."
+
+# Fetch actual EUR/USD data
+chart_data, market_error = get_market_data(
+    "EUR/USD", API_KEY
+)
+
 
 # ==========================================
 # CUSTOM DESIGN
