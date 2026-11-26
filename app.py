@@ -233,10 +233,9 @@ if page == "Dashboard":
         st.caption("Illustrative simulated price data")
 
         st.line_chart(
-            chart_data,
-            color="#00e6a0",
-            height=320
-        )
+    chart_data,
+    height=320
+)
 
         st.markdown('</div>', unsafe_allow_html=True)
 
