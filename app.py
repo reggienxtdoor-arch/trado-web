@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 import random
 from datetime import datetime
-
+#DEMO DATA ONLY
 # ==========================================
 # TRADO AI TRADER | VERSION 2.0
 # ==========================================
