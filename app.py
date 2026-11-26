@@ -4,6 +4,99 @@ import requests
 import plotly.graph_objects as go
 from openai import OpenAI
 
+# TRADO AI CINEMATIC INTRO
+import streamlit as st
+
+if "trado_intro_seen" not in st.session_state:
+    st.session_state.trado_intro_seen = True
+
+    st.markdown("""
+    <style>
+    @keyframes introFade {
+        0%, 75% { opacity: 1; visibility: visible; }
+        100% { opacity: 0; visibility: hidden; }
+    }
+
+    @keyframes logoEnter {
+        0% { opacity: 0; transform: scale(.3) rotate(-20deg); }
+        65% { opacity: 1; transform: scale(1.12) rotate(5deg); }
+        100% { opacity: 1; transform: scale(1) rotate(0); }
+    }
+
+    @keyframes pulse {
+        0%, 100% { box-shadow: 0 0 15px #00e6a0; }
+        50% { box-shadow: 0 0 55px #00e6a0, 0 0 90px #087cff; }
+    }
+
+    @keyframes scan {
+        from { transform: translateY(-100vh); }
+        to { transform: translateY(100vh); }
+    }
+
+    .trado-intro {
+        position: fixed;
+        inset: 0;
+        z-index: 999999;
+        background: radial-gradient(circle, #102b36 0%, #050910 65%, #020409 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        animation: introFade 4.8s ease forwards;
+        pointer-events: none;
+        overflow: hidden;
+    }
+
+    .trado-orb {
+        width: 115px;
+        height: 115px;
+        border: 3px solid #00e6a0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #00e6a0;
+        font-size: 35px;
+        font-weight: 900;
+        animation: logoEnter 1.3s ease-out, pulse 2s infinite 1.3s;
+    }
+
+    .trado-title {
+        color: white;
+        font-size: 38px;
+        font-weight: 900;
+        letter-spacing: 9px;
+        margin-top: 25px;
+        animation: logoEnter 1.5s ease-out;
+    }
+
+    .trado-subtitle {
+        color: #00e6a0;
+        font-size: 12px;
+        letter-spacing: 5px;
+        margin-top: 12px;
+    }
+
+    .trado-scan {
+        position: absolute;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background: #00e6a0;
+        box-shadow: 0 0 20px #00e6a0;
+        animation: scan 3s linear infinite;
+    }
+    </style>
+
+    <div class="trado-intro">
+        <div class="trado-scan"></div>
+        <div class="trado-orb">T</div>
+        <div class="trado-title">TRADO AI</div>
+        <div class="trado-subtitle">ARTIFICIAL INTELLIGENCE</div>
+        <div class="trado-subtitle">SYSTEM INITIALIZING...</div>
+    </div>
+    """, unsafe_allow_html=True)
+
 st.set_page_config(page_title="TRADO AI v4.0", page_icon="📈", layout="wide")
 
 def get_secret(key, default=""):
