@@ -18,6 +18,26 @@ DATA_KEY = get_secret("TWELVE_DATA_API_KEY")
 
 st.markdown("""
 <style>
+@keyframes tradoIntroFade {
+    0%, 94% {
+        opacity: 1;
+        visibility: visible;
+    }
+    100% {
+        opacity: 0;
+        visibility: hidden;
+    }
+}
+
+/* Put the rest of your CSS here */
+
+.trado-intro-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+}
+</style>
+""", unsafe_allow_html=True)
 :root{--bg:#090b10;--panel:#11151d;--panel2:#151b24;--line:#252d38;--mint:#19d6a0;--muted:#8995a5}
 .stApp{background:radial-gradient(ellipse at 78% 0%,#132b2b 0%,#090b10 42%);color:#eef4f8}
 [data-testid="stSidebar"]{background:#0c1017;border-right:1px solid #202833}
