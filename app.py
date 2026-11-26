@@ -249,16 +249,7 @@ if page == "Dashboard":
             ("AUD/USD", "0.65400", "+0.31%"),
             ("XAU/USD", "2650.00", "-0.08%")
         ]
-st.markdown("### EUR/USD LIVE MARKET CHART")
 
-if chart_data is not None and not chart_data.empty:
-
-    latest_price = float(chart_data["close"].iloc[-1])
-
-    st.metric(
-        "Latest EUR/USD Price",
-        f"{latest_price:.5f}"
-    )
 
     chart = chart_data.set_index("datetime")[["close"]]
 
@@ -320,10 +311,37 @@ elif page == "Market Analysis":
     st.title("📊 Market Analysis")
     st.caption("Illustrative market analysis workspace")
 
-    market = st.selectbox(
-        "Select market",
-        ["EUR/USD", "GBP/USD", "USD/JPY", "XAU/USD"]
+    
+st.markdown("### EUR/USD LIVE MARKET CHART")
+
+if chart_data is not None and not chart_data.empty:
+
+    latest_price = float(chart_data["close"].iloc[-1])
+
+    st.metric(
+        "Latest EUR/USD Price",
+        f"{latest_price:.5f}"
     )
+
+    chart = chart_data.set_index("datetime")[["close"]]
+
+    st.line_chart(chart)
+
+    st.caption(
+        "Source: Twelve Data | "
+        "1-minute interval | Last 50 data points"
+    )
+
+    if st.button("Refresh Market Data"):
+        st.cache_data.clear()
+        st.rerun()
+
+else:
+    st.warning(
+        "Market data is unavailable. "
+        "Check your API key and internet connection."
+    )
+
 
     st.subheader(market)
     st.line_chart(chart_data, height=350)
