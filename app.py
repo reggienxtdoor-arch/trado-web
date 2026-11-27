@@ -172,51 +172,36 @@ with login:
                 )
 
     st.divider()
-    st.write("Or sign in using a connected provider:")
+  
+st.divider()
+st.write("Or continue with")
 
-    col1, col2 = st.columns(2)
+google_col, apple_col = st.columns(2)
 
-    with col1:
-        if st.button("Google", use_container_width=True):
-            if configured:
-                try:
-                    result = supabase.auth.sign_in_with_oauth({
-                        "provider": "google",
-                        "options": {
-                            "redirect_to": st.secrets.get("APP_URL", "")
-                        }
-                    })
-                    st.link_button(
-                        "Continue to Google",
-                        result.url,
-                        use_container_width=True
-                    )
-                except Exception:
-                    st.error("Configure Google sign-in in Supabase first.")
-            else:
-                st.error("Configure Supabase first.")
+with google_col:
+    if st.button("🌐 Continue with Google", use_container_width=True):
+        if configured:
+            try:
+                result = supabase.auth.sign_in_with_oauth({
+                    "provider": "google",
+                    "options": {"redirect_to": st.secrets["APP_URL"]}
+                })
+                st.link_button("Continue with Google", result.url)
+            except Exception:
+                st.error("Google sign-in is not configured.")
 
-    with col2:
-        if st.button("Apple", use_container_width=True):
-            if configured:
-                try:
-                    result = supabase.auth.sign_in_with_oauth({
-                        "provider": "apple",
-                        "options": {
-                            "redirect_to": st.secrets.get("APP_URL", "")
-                        }
-                    })
-                    st.link_button(
-                        "Continue to Apple",
-                        result.url,
-                        use_container_width=True
-                    )
-                except Exception:
-                    st.error("Configure Apple sign-in in Supabase first.")
-            else:
-                st.error("Configure Supabase first.")
+with apple_col:
+    if st.button(" Continue with Apple", use_container_width=True):
+        if configured:
+            try:
+                result = supabase.auth.sign_in_with_oauth({
+                    "provider": "apple",
+                    "options": {"redirect_to": st.secrets["APP_URL"]}
+                })
+                st.link_button("Continue with Apple", result.url)
+            except Exception:
+                st.error("Apple sign-in is not configured.")
 
-with signup:
     with st.form("signup_form"):
         new_email = st.text_input("Email address")
         new_password = st.text_input(
